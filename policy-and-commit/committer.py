@@ -7,7 +7,7 @@ from engine import PolicyEngine
 load_dotenv()
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_REPO = os.getenv("GITHUB_REPO", "lamek-tsegay/patch")
+GITHUB_REPO = os.getenv("GITHUB_REPO")
 
 
 def verify_against_file(finding: Finding, file_content: str) -> bool:
@@ -24,6 +24,8 @@ def apply_patch(original: str, search: str, replace: str) -> str | None:
     Returns None if search string not found.
     """
     if search not in original:
+        return None
+    if not search or original.count(search) != 1:
         return None
     return original.replace(search, replace, 1)
 
@@ -52,13 +54,17 @@ def commit_fix(finding: Finding, proposal: dict) -> dict:
     }
 
 
-def commit_fix_approved(finding: Finding, proposal: dict) -> dict:
+def commit_fix_approved(finding: Finding, proposal: dict, *, approved: bool = False) -> dict:
     """
     Called ONLY after human clicks approve on BK's dashboard.
     Applies the patch, commits to a branch, opens a PR.
     Returns pr_url and event log.
     """
     engine = PolicyEngine()
+    if not approved:
+        return {"status": "awaiting_approval", "reason": "Explicit human approval required", "events": engine.get_events()}
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return {"status": "error", "reason": "GITHUB_TOKEN and GITHUB_REPO must be configured", "events": engine.get_events()}
     engine.approve(finding)
 
     try:
@@ -77,6 +83,10 @@ def commit_fix_approved(finding: Finding, proposal: dict) -> dict:
         # Use first patch for demo
         patch = patches[0]
         file_path = patch["file"]
+        from pathlib import PurePosixPath
+        target = PurePosixPath(file_path)
+        if target.is_absolute() or ".." in target.parts or not file_path.endswith(".py") or file_path.startswith("."):
+            return {"status": "error", "reason": "Unsafe patch target", "events": engine.get_events()}
         search = patch["search"]
         replace = patch["replace"]
 
