@@ -143,6 +143,9 @@ def propose_fixes(
         )
         proposals.append(_parse_proposal(raw, finding, slot, rank))
 
+    if len(proposals) != 3 or [proposal.rank for proposal in proposals] != [1, 2, 3]:
+        raise ValueError("Expected exactly three ranked remediation proposals")
+
     if db_conn is not None:
         insert_proposals(db_conn, proposals)
 
@@ -217,6 +220,12 @@ def _parse_proposal(
             f"  present keys:  {sorted(present)}\n"
             f"  expected keys: {sorted(_REQUIRED_KEYS)}"
         )
+
+    search = raw["search_block"]
+    if not search or finding.vulnerable_code.count(search) != 1:
+        raise ValueError("Proposed patch must match exactly one span of verified vulnerable code")
+    if search == raw["replace_block"]:
+        raise ValueError("Proposed fix makes no change")
 
     patch = SearchReplacePatch(
         file=finding.file,
