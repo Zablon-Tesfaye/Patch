@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 from github import Github, Auth
 from shared.schema import Finding
+from shared.paths import validate_remote_path
+from shared.branch_names import fix_branch
+from shared.patch_validation import preview_replace
 from engine import PolicyEngine
 
 load_dotenv()
@@ -23,11 +26,10 @@ def apply_patch(original: str, search: str, replace: str) -> str | None:
     Applies a search/replace patch to file content.
     Returns None if search string not found.
     """
-    if search not in original:
+    try:
+        return preview_replace(original, search, replace)
+    except ValueError:
         return None
-    if not search or original.count(search) != 1:
-        return None
-    return original.replace(search, replace, 1)
 
 
 def commit_fix(finding: Finding, proposal: dict) -> dict:
@@ -82,7 +84,7 @@ def commit_fix_approved(finding: Finding, proposal: dict, *, approved: bool = Fa
 
         # Use first patch for demo
         patch = patches[0]
-        file_path = patch["file"]
+        file_path = validate_remote_path(patch["file"])
         from pathlib import PurePosixPath
         target = PurePosixPath(file_path)
         if target.is_absolute() or ".." in target.parts or not file_path.endswith(".py") or file_path.startswith("."):
@@ -112,7 +114,8 @@ def commit_fix_approved(finding: Finding, proposal: dict, *, approved: bool = Fa
             }
 
         # Step 4 — create branch
-        branch_name = f"patch/fix-{str(finding.finding_id)[:8]}"
+        from uuid import UUID
+        branch_name = fix_branch(finding.finding_id, UUID(str(proposal["proposal_id"])))
         base_sha = repo.get_branch("main").commit.sha
         repo.create_git_ref(
             ref=f"refs/heads/{branch_name}",
