@@ -18,6 +18,7 @@ from typing import Any
 from uuid import uuid4
 
 from shared.db import insert_proposals
+from shared.ranking import validate_ranked_options
 from shared.nemotron_client import NemotronClient
 from shared.schema import (
     BreakingChangeRisk,
@@ -143,8 +144,7 @@ def propose_fixes(
         )
         proposals.append(_parse_proposal(raw, finding, slot, rank))
 
-    if len(proposals) != 3 or [proposal.rank for proposal in proposals] != [1, 2, 3]:
-        raise ValueError("Expected exactly three ranked remediation proposals")
+    validate_ranked_options(proposals)
 
     if db_conn is not None:
         insert_proposals(db_conn, proposals)
