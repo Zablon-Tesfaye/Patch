@@ -284,7 +284,7 @@ def _fallback_commit(command: str, payload: dict[str, Any]) -> dict[str, Any]:
     ]
     return _serialize_policy_result(
         {
-            "status": "approved" if approved else "awaiting_approval",
+            "status": "error" if approved else "awaiting_approval",
             "finding_id": finding["finding_id"],
             "proposal_id": proposal["proposal_id"],
             "events": events,
@@ -309,12 +309,12 @@ def _handle_commit(command: str) -> dict[str, Any]:
         result = (
             _committer.commit_fix(finding, proposal)
             if command == "commit-fix"
-            else _committer.commit_fix_approved(finding, proposal)
+            else _committer.commit_fix_approved(finding, proposal, approved=False)
         )
         return _serialize_policy_result(result, [])
     except Exception as e:
         sys.stderr.write(f"committer error: {e}\n")
-        return _fallback_commit(command, payload)
+        return {"status": "error", "reason": "Policy/committer unavailable; no write performed", "events": []}
 
 
 
