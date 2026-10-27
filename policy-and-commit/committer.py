@@ -5,6 +5,7 @@ from shared.schema import Finding
 from shared.paths import validate_remote_path
 from shared.branch_names import fix_branch
 from shared.patch_validation import preview_replace
+from shared.patch_budget import validate_patch_budget
 from engine import PolicyEngine
 
 load_dotenv()
@@ -91,6 +92,7 @@ def commit_fix_approved(finding: Finding, proposal: dict, *, approved: bool = Fa
             return {"status": "error", "reason": "Unsafe patch target", "events": engine.get_events()}
         search = patch["search"]
         replace = patch["replace"]
+        validate_patch_budget(search, replace)
 
         # Step 1 — get current file
         file_contents = repo.get_contents(file_path)
