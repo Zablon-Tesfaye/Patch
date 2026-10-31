@@ -16,5 +16,7 @@ class Approval:
         current = now or datetime.now(timezone.utc)
         if current.tzinfo is None or self.expires_at.tzinfo is None:
             return False
-        return (bool(self.approved_by.strip()) and self.finding_id == finding_id
+        return (bool(self.approved_by.strip()) and current.utcoffset() is not None
+                and self.expires_at.utcoffset() is not None
+                and self.finding_id == finding_id
                 and self.proposal_id == proposal_id and current < self.expires_at)
