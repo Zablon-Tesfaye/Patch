@@ -14,3 +14,9 @@ def test_rejects_oversized_patch():
 def test_rejects_large_line_change():
     with pytest.raises(ValueError):
         validate_patch_budget("a", "b\n" * 10, max_changed_lines=5)
+
+
+@pytest.mark.parametrize("search,replacement", [("", "replacement"), ("unchanged", "unchanged")])
+def test_rejects_empty_or_noop_patch(search, replacement):
+    with pytest.raises(ValueError):
+        validate_patch_budget(search, replacement)
