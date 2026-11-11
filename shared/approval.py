@@ -14,6 +14,8 @@ class Approval:
 
     def valid_for(self, finding_id: UUID, proposal_id: UUID, now: datetime | None = None) -> bool:
         current = now or datetime.now(timezone.utc)
+        if not isinstance(self.approved_by, str):
+            return False
         if current.tzinfo is None or self.expires_at.tzinfo is None:
             return False
         return (bool(self.approved_by.strip()) and current.utcoffset() is not None
