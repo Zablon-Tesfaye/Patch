@@ -20,3 +20,9 @@ def test_rejects_large_line_change():
 def test_rejects_empty_or_noop_patch(search, replacement):
     with pytest.raises(ValueError):
         validate_patch_budget(search, replacement)
+
+
+@pytest.mark.parametrize("limit", [0, -1, True, 1.5])
+def test_rejects_invalid_line_limits(limit):
+    with pytest.raises(ValueError):
+        validate_patch_budget("before", "after", max_changed_lines=limit)
