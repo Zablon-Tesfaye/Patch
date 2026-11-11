@@ -26,3 +26,9 @@ def test_blank_reviewer_cannot_authorize_write():
     finding, proposal = uuid4(), uuid4()
     approval = Approval(finding, proposal, "  ", datetime.now(timezone.utc) + timedelta(minutes=1))
     assert not approval.valid_for(finding, proposal)
+
+
+def test_nonstring_reviewer_cannot_authorize_write():
+    finding, proposal = uuid4(), uuid4()
+    approval = Approval(finding, proposal, None, datetime.now(timezone.utc) + timedelta(minutes=1))
+    assert not approval.valid_for(finding, proposal)
