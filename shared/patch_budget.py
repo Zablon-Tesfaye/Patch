@@ -5,7 +5,7 @@ from shared.limits import require_size
 
 def validate_patch_budget(search: str, replace: str, *, max_bytes: int = 16_384,
                           max_changed_lines: int = 120) -> None:
-    if max_changed_lines < 1:
+    if isinstance(max_changed_lines, bool) or not isinstance(max_changed_lines, int) or max_changed_lines < 1:
         raise ValueError("Maximum changed lines must be positive")
     if not search:
         raise ValueError("Patch search anchor cannot be empty")
